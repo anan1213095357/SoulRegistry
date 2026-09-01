@@ -1,0 +1,164 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|c:\\users\\anan\\desktop\\blazordeathbook\\soulregistry\\ghostservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|solutionrelative:soulregistry\\ghostservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|c:\\users\\anan\\desktop\\blazordeathbook\\soulregistry\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|solutionrelative:soulregistry\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|c:\\users\\anan\\desktop\\blazordeathbook\\soulregistry\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|solutionrelative:soulregistry\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|c:\\users\\anan\\desktop\\blazordeathbook\\soulregistry\\ghostrecord.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|solutionrelative:soulregistry\\ghostrecord.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|c:\\users\\anan\\desktop\\blazordeathbook\\soulregistry\\components\\pages\\notfound.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|solutionrelative:soulregistry\\components\\pages\\notfound.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|c:\\users\\anan\\desktop\\blazordeathbook\\soulregistry\\components\\_imports.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|solutionrelative:soulregistry\\components\\_imports.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|c:\\users\\anan\\desktop\\blazordeathbook\\soulregistry\\components\\layout\\reconnectmodal.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|solutionrelative:soulregistry\\components\\layout\\reconnectmodal.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|c:\\users\\anan\\desktop\\blazordeathbook\\soulregistry\\components\\layout\\mainlayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{761605E6-D9FD-370C-4D35-67894674BBB1}|SoulRegistry\\SoulRegistry.csproj|solutionrelative:soulregistry\\components\\layout\\mainlayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "GhostService.cs",
+              "DocumentMoniker": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\GhostService.cs",
+              "RelativeDocumentMoniker": "SoulRegistry\\GhostService.cs",
+              "ToolTip": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\GhostService.cs",
+              "RelativeToolTip": "SoulRegistry\\GhostService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-01T07:21:47.444Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "GhostRecord.cs",
+              "DocumentMoniker": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\GhostRecord.cs",
+              "RelativeDocumentMoniker": "SoulRegistry\\GhostRecord.cs",
+              "ToolTip": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\GhostRecord.cs",
+              "RelativeToolTip": "SoulRegistry\\GhostRecord.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-01T07:21:34.825Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "ReconnectModal.razor",
+              "DocumentMoniker": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\Components\\Layout\\ReconnectModal.razor",
+              "RelativeDocumentMoniker": "SoulRegistry\\Components\\Layout\\ReconnectModal.razor",
+              "ToolTip": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\Components\\Layout\\ReconnectModal.razor",
+              "RelativeToolTip": "SoulRegistry\\Components\\Layout\\ReconnectModal.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-09-01T07:21:00.526Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "MainLayout.razor",
+              "DocumentMoniker": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\Components\\Layout\\MainLayout.razor",
+              "RelativeDocumentMoniker": "SoulRegistry\\Components\\Layout\\MainLayout.razor",
+              "ToolTip": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\Components\\Layout\\MainLayout.razor",
+              "RelativeToolTip": "SoulRegistry\\Components\\Layout\\MainLayout.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-09-01T07:20:53.423Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "NotFound.razor",
+              "DocumentMoniker": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\Components\\Pages\\NotFound.razor",
+              "RelativeDocumentMoniker": "SoulRegistry\\Components\\Pages\\NotFound.razor",
+              "ToolTip": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\Components\\Pages\\NotFound.razor",
+              "RelativeToolTip": "SoulRegistry\\Components\\Pages\\NotFound.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-09-01T07:20:35.738Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "_Imports.razor",
+              "DocumentMoniker": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\Components\\_Imports.razor",
+              "RelativeDocumentMoniker": "SoulRegistry\\Components\\_Imports.razor",
+              "ToolTip": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\Components\\_Imports.razor",
+              "RelativeToolTip": "SoulRegistry\\Components\\_Imports.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAATAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-09-01T07:20:35.087Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Home.razor",
+              "DocumentMoniker": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\Components\\Pages\\Home.razor",
+              "RelativeDocumentMoniker": "SoulRegistry\\Components\\Pages\\Home.razor",
+              "ToolTip": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\Components\\Pages\\Home.razor",
+              "RelativeToolTip": "SoulRegistry\\Components\\Pages\\Home.razor",
+              "ViewState": "AgIAAGQDAAAAAAAAAAAowHkDAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-09-01T07:05:25.838Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\Program.cs",
+              "RelativeDocumentMoniker": "SoulRegistry\\Program.cs",
+              "ToolTip": "C:\\Users\\anan\\Desktop\\BlazorDeathBook\\SoulRegistry\\Program.cs",
+              "RelativeToolTip": "SoulRegistry\\Program.cs",
+              "ViewState": "AgIAAAoAAAAAAAAAAAAewBMAAAAuAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-01T07:04:54.69Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1172 @@
+﻿@page "/"
+@using SoulRegistry.Data
+@using System.Text.Json
+@inject GhostService GhostService
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+@rendermode InteractiveServer‌
+
+<style>
+    :root {
+        --book-w: 560px;
+        --book-h: 800px;
+        --max-thick: 80px;
+        --progress: 0;
+        /* 【修改1】恐怖中式阴间配色 */
+        --bg-dark: #000000;
+        --paper: #c9b896;
+        --paper-dark: #6b5338;
+        --cover: #0a0000;
+        --blood: #6b0000;
+        --ink: #1a0a0a;
+        --scene-scale: 1;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    /* ==================== 新增：寻魂镜（人脸搜索按钮） ==================== */
+    .search-soul-btn {
+        position: fixed;
+        right: 40px;
+        top: 40px;
+        width: 70px;
+        height: 70px;
+        background: radial-gradient(circle at center, #2a0505 0%, #0a0000 80%);
+        border: 2px solid var(--blood);
+        border-radius: 50%;
+        color: var(--blood);
+        font-size: 20px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 0 20px rgba(139, 0, 0, 0.5), inset 0 0 10px rgba(255, 0, 0, 0.2);
+        z-index: 100;
+        transition: all 0.3s;
+        writing-mode: vertical-rl;
+        text-shadow: 1px 1px 2px #000;
+    }
+
+        .search-soul-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.8), inset 0 0 15px rgba(255, 0, 0, 0.4);
+            color: #ff3333;
+            border-color: #ff3333;
+        }
+
+    body {
+        /* ✅ 加上引号和 ./ 确保路径解析正确 */
+        
+        /* ✅ 改用 background-color，就不会覆盖上面的图片属性了 */
+        background-color: #020000;
+        /* ✅ 建议加上这两行，让背景图片完美铺满全屏且居中 */
+        background-size: cover;
+        background-position: center;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'KaiTi', 'STKaiti', 'BiauKai', serif;
+        perspective: 2000px;
+        overflow: hidden;
+        color: var(--ink);
+        position: relative;
+    }
+
+        /* ========== 【修改1】阴间恐怖氛围背景 ========== */
+        body::before {
+            background-image: url('./Gemini_Generated_Image_bv105rbv105rbv10.jpg');
+            content: '';
+            inset: 0;
+            position: fixed;
+            inset: 0;
+            z-index: -3;
+            background-size: cover;
+            background-position: center;
+        }
+
+    /* ==================== 新增：不规则飘动红雾特效 (自然柔和，一缕一缕) ==================== */
+    .red-fog-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 50vh;
+        /* 仅在下半网页 */
+        z-index: -2;
+        pointer-events: none;
+        overflow: hidden;
+    }
+
+    .wisp {
+        position: absolute;
+        left: 100%;
+        /* 确保从屏幕最右侧之外开始飘入 */
+        /* 利用被高度拉伸的柔和渐变 + 极度模糊，生成不规则的烟雾质感，绝无生硬色块 */
+        background: radial-gradient(ellipse at center, rgba(139, 0, 0, 0.4) 0%, rgba(100, 0, 0, 0.15) 40%, transparent 70%);
+        filter: blur(35px);
+        opacity: 0;
+    }
+
+    /* 第一缕：低层长雾，平缓 */
+    .wisp-1 {
+        bottom: 10%;
+        width: 140vw;
+        height: 18vh;
+        /* 将 35s 改为 15s */
+        animation: wispWind 15s cubic-bezier(0.3, 0.1, 0.7, 0.9) infinite;
+    }
+
+    /* 第二缕：中层细雾，带微微上下摇曳 */
+    .wisp-2 {
+        bottom: 25%;
+        width: 110vw;
+        height: 12vh;
+        background: radial-gradient(ellipse at center, rgba(180, 10, 10, 0.3) 0%, transparent 60%);
+        /* 将 42s 改为 20s，延迟时间也可以适当缩短 */
+        animation: wispWind 20s cubic-bezier(0.4, 0.2, 0.6, 0.8) infinite -5s;
+    }
+
+    /* 第三缕：底层暗色宽雾，增加层次感 */
+    .wisp-3 {
+        bottom: -5%;
+        width: 160vw;
+        height: 25vh;
+        background: radial-gradient(ellipse at center, rgba(80, 0, 0, 0.5) 0%, transparent 60%);
+        /* 将 48s 改为 22s */
+        animation: wispWind 22s ease-in-out infinite -10s;
+    }
+
+    /* 第四缕：高层稀薄长雾，飘动稍快 */
+    .wisp-4 {
+        bottom: 35%;
+        width: 90vw;
+        height: 10vh;
+        background: radial-gradient(ellipse at center, rgba(139, 0, 0, 0.25) 0%, transparent 70%);
+        /* 将 28s 改为 12s */
+        animation: wispWind 12s ease-in-out infinite -2s;
+    }
+
+    /* 模拟风吹的摇曳：包含X轴平移，并加上极其微小的Y轴起伏(2vh)与拉伸变形，模拟“风吹散”的灵动 */
+    @@keyframes wispWind {
+        0% {
+            transform: translate(0vw, 0) scaleY(1) rotate(0deg);
+            opacity: 0;
+        }
+
+        15% {
+            opacity: 1;
+        }
+
+        45% {
+            transform: translate(-70vw, 3vh) scaleY(1.15) rotate(-1deg);
+            opacity: 0.85;
+        }
+
+        75% {
+            transform: translate(-140vw, -2vh) scaleY(0.9) rotate(1deg);
+            opacity: 0.95;
+        }
+
+        90% {
+            opacity: 1;
+        }
+
+        100% {
+            transform: translate(-220vw, 0) scaleY(1) rotate(0deg);
+            opacity: 0;
+        }
+    }
+
+    .scene {
+        position: relative;
+        width: calc(var(--book-w) * 2);
+        height: var(--book-h);
+        transform-style: preserve-3d;
+        transform: scale(var(--scene-scale)) rotateX(calc(25deg + var(--tilt-y, 0deg))) rotateY(var(--tilt-x, 0deg));
+        /* 【关键修复】：确保偏移量乘以缩放数字，才能把书拉回屏幕正中央 */
+        translate: calc(var(--scene-offset, 0px) * var(--scene-scale)) 0px;
+        transition: transform 0.15s ease-out, translate 1.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+        z-index: 99999;
+        will-change: transform, translate;
+    }
+
+    .volume {
+        position: absolute;
+        top: 0;
+        width: var(--book-w);
+        height: 100%;
+        transform-style: preserve-3d;
+    }
+
+    .left-volume {
+        right: 50%;
+    }
+
+    .right-volume {
+        left: 50%;
+    }
+
+    .edge-texture-v {
+        background: repeating-linear-gradient(to right, var(--paper) 0px, var(--paper) 2px, var(--paper-dark) 2px, var(--paper-dark) 3px);
+    }
+
+    .edge-texture-h {
+        background: repeating-linear-gradient(to bottom, var(--paper) 0px, var(--paper) 2px, var(--paper-dark) 2px, var(--paper-dark) 3px);
+    }
+
+    .right-volume .edge-outer {
+        position: absolute;
+        right: 0;
+        width: calc(var(--max-thick) * (1 - var(--progress)));
+        height: 100%;
+        transform-origin: right;
+        transform: rotateY(-90deg);
+        box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.95);
+    }
+
+    .right-volume .edge-bottom {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: calc(var(--max-thick) * (1 - var(--progress)));
+        transform-origin: bottom;
+        transform: rotateX(90deg);
+        box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.95);
+    }
+
+    .right-volume .cover-bottom {
+        position: absolute;
+        inset: 0;
+        background: var(--cover);
+        border-radius: 0 4px 4px 0;
+        transform: translateZ(calc(var(--max-thick) * (1 - var(--progress)) * -1));
+        box-shadow: 30px 40px 60px rgba(0, 0, 0, 0.85);
+    }
+
+    .left-volume .edge-outer {
+        position: absolute;
+        left: 0;
+        width: calc(var(--max-thick) * var(--progress));
+        height: 100%;
+        transform-origin: left;
+        transform: rotateY(90deg);
+        box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.95);
+    }
+
+    .left-volume .edge-bottom {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: calc(var(--max-thick) * var(--progress));
+        transform-origin: bottom;
+        transform: rotateX(90deg);
+        box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.95);
+    }
+
+    .left-volume .cover-bottom {
+        position: absolute;
+        inset: 0;
+        background: var(--cover);
+        border-radius: 4px 0 0 4px;
+        transform: translateZ(calc(var(--max-thick) * var(--progress) * -1));
+        box-shadow: -30px 40px 60px rgba(0, 0, 0, 0.85);
+    }
+
+    /* 【修改3】恐怖写实封面 */
+    .surface {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #0a0000 0%, #1a0505 50%, #000000 100%);
+        transform: translateZ(0);
+    }
+
+    .flip-page {
+        position: absolute;
+        left: 50%;
+        width: var(--book-w);
+        height: 100%;
+        transform-origin: left center;
+        transform-style: preserve-3d;
+        transition: transform 1.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+        cursor: pointer;
+        transform: translateZ(var(--z-unflipped, 1px)) rotateY(0deg);
+    }
+
+        .flip-page.flipped {
+            transform: translateZ(var(--z-flipped, 1px)) rotateY(-180deg);
+        }
+
+    /* 【修改2】做旧恐怖纸张纹理 */
+    .face {
+        position: absolute;
+        inset: 0;
+        backface-visibility: hidden;
+        background-color: var(--paper);
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.18'/%3E%3C/svg%3E"), radial-gradient(ellipse at 20% 30%, rgba(80, 50, 30, 0.25) 0%, transparent 40%), radial-gradient(ellipse at 80% 70%, rgba(60, 30, 15, 0.3) 0%, transparent 45%), radial-gradient(circle at 60% 40%, rgba(107, 0, 0, 0.08) 0%, transparent 30%), radial-gradient(circle at 30% 80%, rgba(139, 90, 43, 0.15) 0%, transparent 35%), radial-gradient(circle at 85% 20%, rgba(50, 30, 10, 0.2) 0%, transparent 25%), linear-gradient(90deg, rgba(60, 40, 20, 0.15) 0%, transparent 8%, transparent 92%, rgba(60, 40, 20, 0.15) 100%), linear-gradient(0deg, rgba(60, 40, 20, 0.15) 0%, transparent 8%, transparent 92%, rgba(60, 40, 20, 0.15) 100%), linear-gradient(45deg, transparent 0%, rgba(107, 0, 0, 0.03) 50%, transparent 100%);
+        box-shadow: inset 0 0 80px rgba(30, 15, 5, 0.75), inset 0 0 200px rgba(0, 0, 0, 0.4);
+        overflow: hidden;
+    }
+
+    .face-front {
+        transform: rotateY(0deg);
+        border-radius: 0 4px 4px 0;
+    }
+
+    .face-back {
+        transform: rotateY(180deg);
+        border-radius: 4px 0 0 4px;
+    }
+
+    /* 【修改3】恐怖封面样式 */
+    .face-cover {
+        background-image: url('./Gemini_Generated_Image_wtga7vwtga7vwtga.jpg');
+        background-size: cover;
+        /* 				background:
+                            radial-gradient(circle at 50% 50%, #1a0505 0%, #0a0000 60%, #000000 100%),
+                            linear-gradient(135deg, #0a0000 0%, #150303 100%); */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.95), inset 0 0 40px rgba(107, 0, 0, 0.3);
+    }
+
+    /* 封面恐怖标题 */
+    .title-huge {
+        color: var(--blood);
+        font-size: 100px;
+        font-weight: bold;
+        letter-spacing: 40px;
+        writing-mode: vertical-rl;
+        text-shadow: 0 0 30px rgba(107, 0, 0, 0.8), 0 0 60px rgba(139, 0, 0, 0.4), 3px 3px 8px #000, -1px -1px 0 rgba(0, 0, 0, 0.8);
+        filter: drop-shadow(0 0 10px rgba(107, 0, 0, 0.5));
+    }
+
+    .page-content {
+        padding: 40px;
+        height: 100%;
+        display: flex;
+        position: relative;
+    }
+
+    .page-header {
+        position: absolute;
+        top: 15px;
+        left: 40px;
+        right: 40px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+        font-weight: bold;
+        color: var(--ink);
+        opacity: 0.6;
+        border-bottom: 1px solid rgba(26, 26, 26, 0.4);
+        padding-bottom: 5px;
+        pointer-events: none;
+    }
+
+    .border-box {
+        border: 3px double var(--ink);
+        flex: 1;
+        padding: 30px;
+        position: relative;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+        .border-box::before {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+        }
+
+    .vertical-text {
+        writing-mode: vertical-rl;
+        text-orientation: upright;
+        font-size: 22px;
+        line-height: 2.2;
+        color: var(--ink);
+        font-weight: bold;
+    }
+
+    h2 {
+        font-size: 32px;
+        border-left: 2px solid var(--ink);
+        padding-left: 10px;
+        margin-left: 20px;
+    }
+
+    .stamp {
+        position: absolute;
+        bottom: 50px;
+        left: 50px;
+        width: 70px;
+        height: 70px;
+        border: 4px solid var(--blood);
+        color: var(--blood);
+        font-size: 24px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transform: rotate(-15deg);
+        opacity: 0.85;
+        box-shadow: inset 0 0 5px rgba(138, 3, 3, 0.3);
+        pointer-events: none;
+    }
+
+    .record-col {
+        display: block;
+        margin-left: 30px;
+        height: 100%;
+        position: relative;
+        padding-right: 10px;
+    }
+
+        .record-col:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 20%;
+            height: 60%;
+            width: 1px;
+            background: rgba(26, 26, 26, 0.15);
+        }
+
+    .ghost-input {
+        background: transparent;
+        border: none;
+        border-left: 1px dashed rgba(26, 26, 26, 0.6);
+        color: var(--ink);
+        font-family: inherit;
+        font-size: 22px;
+        font-weight: bold;
+        outline: none;
+        writing-mode: vertical-rl;
+        text-orientation: upright;
+        padding: 5px 0;
+        width: 35px;
+    }
+
+    textarea.ghost-input {
+        border: 1px dashed rgba(26, 26, 26, 0.6);
+        padding: 5px;
+        width: 80px;
+        resize: none;
+        line-height: 1.6;
+    }
+
+    .saved-area .record-col {
+        font-size: 20px;
+        line-height: 2.4;
+        color: var(--ink);
+    }
+
+        .saved-area .record-col:first-child {
+            font-size: 24px;
+            margin-left: 35px;
+        }
+
+    /* AI 法阵加载屏 */
+    #ai-loading {
+        position: fixed;
+        inset: 0;
+        background: #050505;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--blood);
+    }
+
+
+
+    /* ==================== 针对性修改 1: 添加天庭写实烟雾 CSS (追加) ==================== */
+    /* 1. 底层厚重云雾容器 (Vanta) */
+    #smoke-container {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 65vh;
+        mix-blend-mode: screen;
+        -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 100%);
+        mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 100%);
+        opacity: 0.3;
+        pointer-events: none;
+        z-index: 999;
+    }
+
+    /* 2. 顶层游离飞烟容器 */
+    #wisps-container {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 80vh;
+        pointer-events: none;
+        overflow: hidden;
+        /* 修改 z-index，也放在红雾 (-2) 和书本 (1) 之间 */
+        z-index: -1;
+    }
+
+    .heavenly-wisp {
+        position: absolute;
+        /* 【改动2】：将纯白(255,255,255,0.4) 改为带有较低透明度的浅红色 */
+        background: rgba(255, 80, 80, 0.2);
+        filter: blur(80px); /* 极致模糊，彻底消除边缘 */
+        border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; /* 随机的不规则形状 */
+        opacity: 0;
+    }
+
+        .heavenly-wisp:nth-child(1) {
+            width: 50vw;
+            height: 30vh;
+            bottom: 10%;
+            left: -20%;
+            /* 将 20s 改为 8s */
+            animation: drift1 8s infinite ease-in-out;
+        }
+
+        .heavenly-wisp:nth-child(2) {
+            width: 60vw;
+            height: 40vh;
+            bottom: -5%;
+            right: -20%;
+            /* 将 28s 改为 12s */
+            animation: drift2 12s infinite ease-in-out 3s;
+        }
+
+        .heavenly-wisp:nth-child(3) {
+            width: 45vw;
+            height: 25vh;
+            bottom: 20%;
+            left: 10%;
+            /* 将 24s 改为 10s */
+            animation: drift3 10s infinite ease-in-out 5s;
+        }
+
+    /* 游离动画：位移、形变、淡入淡出 */
+    @@keyframes drift1 {
+        0% {
+            transform: translate(0, 0) scale(0.8);
+            opacity: 0;
+        }
+
+        30% {
+            opacity: 0.3;
+        }
+
+        70% {
+            opacity: 0.3;
+        }
+
+        100% {
+            transform: translate(40vw, -15vh) scale(1.5);
+            opacity: 0;
+        }
+    }
+    @@keyframes drift2 {
+        0% {
+            transform: translate(0, 0) scale(1);
+            opacity: 0;
+        }
+
+        30% {
+            opacity: 0.2;
+        }
+
+        70% {
+            opacity: 0.2;
+        }
+
+        100% {
+            transform: translate(-30vw, -10vh) scale(1.3) skewX(10deg);
+            opacity: 0;
+        }
+    }
+    @@keyframes drift3 {
+        0% {
+            transform: translate(0, 0) scale(0.9);
+            opacity: 0;
+        }
+
+        40% {
+            opacity: 0.25;
+        }
+
+        100% {
+            transform: translate(35vw, -20vh) scale(1.6);
+            opacity: 0;
+        }
+    }
+
+    @@media screen and (max-width: 1200px) and (orientation: portrait) {
+        :root {
+            /* 保持你调好的书本大小 */
+            --scene-scale: 0.4;
+        }
+
+        body {
+            transform: rotate(90deg) translateY(-100%);
+            transform-origin: top left;
+            width: 100vh;
+            height: 100vw;
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            /* 确保底层背景图在旋转后完美铺满 */
+            background-size: cover;
+            background-position: center;
+        }
+        /* ==================== 修复：让所有背景特效适应旋转后的屏幕 ==================== */
+        /* 1. 修复红雾容器：把高度改为 vw（物理屏幕宽），宽度撑满 100% */
+        .red-fog-container {
+            width: 100% !important;
+            height: 50vw !important;
+        }
+        /* 2. 修复天庭写实烟雾 (Vanta) 容器 */
+        #smoke-container {
+            width: 100% !important;
+            height: 85 vw !important;
+        }
+        /* 3. 修复游离飞烟容器 */
+        #wisps-container {
+            width: 100% !important;
+            height: 80vw !important;
+        }
+        /* 4. 修复内部云雾的拉伸（原本长宽是以物理 vw/vh 计算的，旋转后需要对调） */
+        .wisp-1 {
+            width: 140vh;
+            height: 18vw;
+        }
+
+        .wisp-2 {
+            width: 110vh;
+            height: 12vw;
+        }
+
+        .wisp-3 {
+            width: 160vh;
+            height: 25vw;
+        }
+
+        .wisp-4 {
+            width: 90vh;
+            height: 10vw;
+        }
+
+        .heavenly-wisp:nth-child(1) {
+            width: 50vh;
+            height: 30vw;
+        }
+
+        .heavenly-wisp:nth-child(2) {
+            width: 60vh;
+            height: 40vw;
+        }
+
+        .heavenly-wisp:nth-child(3) {
+            width: 45vh;
+            height: 25vw;
+        }
+        /* ========================================================================= */
+
+        .search-soul-btn {
+            width: 45px;
+            height: 45px;
+            right: 15px;
+            top: 15px;
+            font-size: 14px;
+        }
+
+        img[src="1111.png"] {
+            display: block !important; /* 强制显示 */
+            width: 8vh !important; /* 手机端宽度改用 vh (即原屏幕的高度)，防止变形 */
+            top: 75vw !important; /* 重新调整在旋转后的 Y 轴位置 */
+            right: 15vh !important; /* 重新调整 X 轴位置 */
+            /* 保证居中的同时，确保它跟着 body 的旋转正确对齐 */
+            transform: translate(50%, -50%) !important;
+        }
+
+        img[src="2222.png"] {
+            display: block !important;
+            width: 10vh !important;
+            top: 75vw !important;
+            left: 25vh !important;
+            transform: translate(-50%, -50%) !important;
+        }
+        #ai-loading h1 {
+            font-size: 28px !important;
+        }
+
+        #ai-loading p {
+            font-size: 14px !important;
+            padding: 0 20px;
+            text-align: center;
+        }
+    }
+    
+</style>
+<!-- ==================== 新增：3D 书本鼠标跟随法阵 ==================== -->
+<script>
+    // 增加全局防御，防止 Blazor 重新渲染时无限挂载监听器
+    if (!window.deathBookInited) {
+        window.deathBookInited = true;
+        window.initHeavenlySmoke = function() {
+            // 检查是否已初始化，避免重复
+            if (window.vantaCloudEffect) {
+                return;
+            }
+            window.vantaCloudEffect = VANTA.CLOUDS({
+                el: "#smoke-container",
+                mouseControls: false, touchControls: false, gyroControls: false,
+                skyColor: 0x000000,
+                /* 【改动3】：将 cloudColor (纯白0xffffff) 改为浅红色 0xff6666 */
+                cloudColor: 0xff6666,
+                /* 【改动4】：将 cloudShadowColor (灰0x666666) 改为暗红色 0x440505，使雾气阴影更有阴间氛围 */
+                cloudShadowColor: 0x440505,
+                sunColor: 0x000000, sunGlareColor: 0x000000,
+                speed: 1.5, zoom: 1.0
+            });
+        };
+
+        let ticking = false; // 用于 requestAnimationFrame 节流
+
+        document.addEventListener("mousemove", function(e) {
+            // 节流控制：确保浏览器在下一帧渲染前，不执行多余的计算
+            if (!ticking) {
+                window.requestAnimationFrame(function() {
+                    const scene = document.querySelector('.scene');
+                    if (scene) {
+                        const width = window.innerWidth;
+                        const height = window.innerHeight;
+                        const xAxis = (e.clientX / width - 0.5) * 2;
+                        const yAxis = (e.clientY / height - 0.5) * 2;
+                        const maxTiltX = 8;
+                        const maxTiltY = 8;
+                        scene.style.setProperty('--tilt-x', `${xAxis * maxTiltX}deg`);
+                        scene.style.setProperty('--tilt-y', `${yAxis * -maxTiltY}deg`);
+                    }
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+        document.addEventListener("touchmove", function(e) {
+            if (!ticking && e.touches.length > 0) {
+                window.requestAnimationFrame(function() {
+                    const scene = document.querySelector('.scene');
+                    if (scene) {
+                        const width = window.innerWidth;
+                        const height = window.innerHeight;
+                        const touch = e.touches[0];
+                        // 计算触摸点相对屏幕中心的位置
+                        const xAxis = (touch.clientX / width - 0.5) * 2;
+                        const yAxis = (touch.clientY / height - 0.5) * 2;
+                        const maxTiltX = 8;
+                        const maxTiltY = 8;
+                        scene.style.setProperty('--tilt-x', `${xAxis * maxTiltX}deg`);
+                        scene.style.setProperty('--tilt-y', `${yAxis * -maxTiltY}deg`);
+                    }
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }, { passive: true });
+
+        window.deathBookAudio = {
+            playBgm: function() {
+                var bgm = document.getElementById('bgm-audio');
+                if (bgm.paused) {
+                    bgm.volume = 0.5;
+                    bgm.play().catch(e => console.log("BGM被浏览器拦截:", e));
+                }
+            },
+            playFlip: function() {
+                var flip = document.getElementById('page-flip-audio');
+                flip.currentTime = 0;
+                flip.volume = 1.0;
+                flip.play().catch(e => console.log("翻页音效被拦截:", e));
+            }
+        };
+    }
+</script>
+<img src="2222.png" class="mobile-hide" style="position:absolute;top:65%;left:30%;transform:translate(-50%,-50%);width:10%; z-index:-1;" />
+<img src="1111.png" class="mobile-hide" style="position:absolute;top:65%;right:20%;transform:translate(-50%,-50%);width:8%; z-index:-1;" />
+<!-- 页面初始/AI加载遮罩 -->
+<div id="ai-loading">
+    <h1 style="font-size:40px; letter-spacing:10px; margin-bottom:20px; font-weight:bold;">阎罗大殿 开启中</h1>
+    <p style="color:var(--paper-dark); font-size:18px;" id="loading-text">正在通灵加载"面相判决"法阵，需借助天地灵气(网络)...</p>
+</div>
+
+<div id="smoke-container"></div>
+
+
+<!-- 新增：寻魂镜（人脸搜索入口） -->
+<div class="search-soul-btn" @onclick="TriggerSearch">寻魂镜</div>
+
+<!-- 新增：寻魂法阵加载屏（仅在搜索时显示） -->
+@if (isSearchingMode && IsLoadingImg)
+{
+    <div id="ai-loading" style="background: rgba(5,5,5,0.85);">
+        <h1 style="font-size:40px; letter-spacing:10px; margin-bottom:20px; font-weight:bold; color: var(--blood);">寻魂诀 运转中</h1>
+        <p style="color:var(--paper-dark); font-size:18px;">正在八荒六合搜索此面相...</p>
+    </div>
+}
+
+<audio id="bgm-audio" src="audio/bgm.mp3" loop preload="auto"></audio>
+<audio id="page-flip-audio" src="audio/page-flip.mp3" preload="auto"></audio>
+
+<div class="scene" style="--progress: @Progress.ToString(System.Globalization.CultureInfo.InvariantCulture); --scene-offset: @SceneOffsetCss;">
+    <div class="volume left-volume" style="visibility: @(leftVolumeVisible ? "visible" : "hidden")">
+        <div class="cover-bottom"></div><div class="edge-outer edge-texture-v"></div><div class="edge-bottom edge-texture-h"></div><div class="surface"></div>
+    </div>
+    <div class="volume right-volume" style="visibility: @(rightVolumeVisible ? "visible" : "hidden")">
+        <div class="cover-bottom"></div><div class="edge-outer edge-texture-v"></div><div class="edge-bottom edge-texture-h"></div><div class="surface"></div>
+    </div>
+
+    @* 仅渲染附近的 10 页，保证性能 *@
+    @for (int i = RenderStart; i <= RenderEnd; i++)
+    {
+        int pageIndex = i;
+        bool isFlipped = pageIndex < CurrentFlippedCount;
+        double zUnflipped = 5 - (pageIndex - CurrentFlippedCount) * 0.5;
+        double zFlipped = 5 - (CurrentFlippedCount - 1 - pageIndex) * 0.5;
+
+        <div @key="pageIndex" class="flip-page @(isFlipped ? "flipped" : "")"
+             style="--z-unflipped: @(zUnflipped.ToString(System.Globalization.CultureInfo.InvariantCulture))px; --z-flipped: @(zFlipped.ToString(System.Globalization.CultureInfo.InvariantCulture))px;"
+             @onclick="() => FlipPage(pageIndex)">
+
+            @if (pageIndex == 0)
+            {
+                <div class="face face-front face-cover"></div>
+                <div class="face face-back">
+                    <div class="page-content">
+                        <div class="page-header"><span>生死簿 · 幽冥录</span><span>第 一 页</span></div>
+                        <div class="border-box vertical-text">
+                            <h2>阴曹地府 幽冥录</h2>
+                            <p>天地玄黄，宇宙洪荒。<br>凡人阳寿，皆定于此。<br>生人勿视，违者勾魂。</p>
+                            <div class="stamp" style="transform: rotate(10deg); left: auto; right: 50px; bottom: 80px;">绝密</div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (pageIndex == TotalPages - 1)
+            {
+                <div class="face face-front">
+                    <div class="page-content">
+                        <div class="page-header"><span>生死簿 · 卷尾</span><span class="page-num-tail">第 @(TotalPages * 2 - 2) 页</span></div>
+                        <div class="border-box vertical-text">
+                            <h2>卷尾</h2>
+                            <p>冥冥之中，自有天意。<br>因果循环，报应不爽。<br>本卷阅尽。</p>
+                            <div class="stamp" style="left: auto; right: 50px; bottom: 50px;">阎罗印</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="face face-back face-cover"></div>
+            }
+            else
+            {
+                <div class="face face-front">
+                    @RenderRecordSide(pageIndex * 2, pageIndex * 2)
+                </div>
+                <div class="face face-back">
+                    @RenderRecordSide(pageIndex * 2 + 1, pageIndex * 2 + 1)
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool isAnimating = false;
+    private bool isBgmStarted = false;
+    private const int TotalPages = 3000;
+    private int CurrentFlippedCount = 0;
+    private bool leftVolumeVisible = false;
+    private bool rightVolumeVisible = true;
+    private double Progress => (double)CurrentFlippedCount / TotalPages;
+    private string SceneOffsetCss => CurrentFlippedCount == 0
+        ? "calc(var(--book-w) / -2)"
+        : CurrentFlippedCount == TotalPages
+            ? "calc(var(--book-w) / 2)"
+            : "0px";
+    private int RenderStart => Math.Max(0, CurrentFlippedCount - 5);
+    private int RenderEnd => Math.Min(TotalPages - 1, CurrentFlippedCount + 5);
+
+    private Dictionary<int, GhostRecord> SavedRecords = new();
+    private Dictionary<int, GhostRecord> EditBuffer = new(); // 正在编辑中的状态记录
+    private int? ActiveEditingRecordIndex = null; // 当前正在上传图片的坑位
+    private bool IsLoadingImg = false;
+    private DotNetObjectReference<Home>? dotNetHelper;
+    private bool isSearchingMode = false;
+    // 触发寻魂搜索
+    private async Task TriggerSearch()
+    {
+        if (!isBgmStarted)
+        {
+            isBgmStarted = true;
+            await JSRuntime.InvokeVoidAsync("deathBookAudio.playBgm");
+        }
+        isSearchingMode = true;
+        ActiveEditingRecordIndex = null; // 清除普通录入的坑位
+        SetLoadingState(true);
+        await JSRuntime.InvokeVoidAsync("deathBook.triggerUpload"); // 复用你原本的上传唤醒逻辑
+    }
+    // 查找到对应的人后，计算页码并翻页
+    private async Task JumpToRecord(int targetRecordIndex)
+    {
+        if (isAnimating) return;
+        _ = JSRuntime.InvokeVoidAsync("deathBookAudio.playFlip");
+        int targetFlippedCount = targetRecordIndex / 2;
+        if (targetRecordIndex % 2 != 0)
+        {
+            targetFlippedCount += 1;
+        }
+
+        // 防越界
+        if (targetFlippedCount < 0) targetFlippedCount = 0;
+        if (targetFlippedCount > TotalPages) targetFlippedCount = TotalPages;
+
+        // 如果已经在目标页，则不需要翻动
+        if (CurrentFlippedCount == targetFlippedCount) return;
+        isAnimating = true;
+        // ================= 修复核心 =================
+        // 绝不能调用 FlipPage()！因为 FlipPage 是处理“鼠标点击左右侧”的相对逻辑。
+        // 搜索法术需要的是“绝对定位”，因此直接强行篡改 CurrentFlippedCount。
+
+        CurrentFlippedCount = targetFlippedCount;
+
+        // 瞬间隐藏目标侧的厚度底座，防止穿模
+        if (CurrentFlippedCount == 0) leftVolumeVisible = false;
+        if (CurrentFlippedCount == TotalPages) rightVolumeVisible = false;
+
+        // 强制刷新UI，触发大范围翻页的 CSS 动画
+        StateHasChanged();
+
+        // 延迟900毫秒，等待纸张在空中飞过去
+        await Task.Delay(900);
+
+        // 落地后显示厚度底座
+        if (CurrentFlippedCount > 0) leftVolumeVisible = true;
+        if (CurrentFlippedCount < TotalPages) rightVolumeVisible = true;
+
+        StateHasChanged();
+        isAnimating = false;
+    }
+    protected override void OnInitialized()
+    {
+        // 初始加载数据库里已有的阴间记录
+        var dbRecords = GhostService.GetAllRecords();
+        foreach (var rec in dbRecords)
+        {
+            SavedRecords[rec.RecordIndex] = rec;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            dotNetHelper = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("deathBook.init", dotNetHelper);
+            await JSRuntime.InvokeVoidAsync("initHeavenlySmoke");
+        }
+    }
+
+    private async Task FlipPage(int pageIndex)
+    {
+        if (isAnimating) return;
+        if (!isBgmStarted)
+        {
+            isBgmStarted = true;
+            // 不阻塞UI线程，直接异步触发播放
+            _ = JSRuntime.InvokeVoidAsync("deathBookAudio.playBgm");
+        }
+        _ = JSRuntime.InvokeVoidAsync("deathBookAudio.playFlip");
+        // 1. 更新当前翻页的索引
+        if (pageIndex < CurrentFlippedCount)
+            CurrentFlippedCount = pageIndex;
+        else
+            CurrentFlippedCount = pageIndex + 1;
+
+        // 2. 翻到了头尾，需要瞬间隐藏该侧的厚度底座
+        if (CurrentFlippedCount == 0) leftVolumeVisible = false;
+        if (CurrentFlippedCount == TotalPages) rightVolumeVisible = false;
+
+        // 3. 强制刷新UI，让 CSS 翻页动画 (1.2s) 开始运行
+        StateHasChanged();
+
+        // 4. 核心：等待900毫秒（对应 JS 的 setTimeout），等翻过去的页面在空中快要落地时，再显示底座
+        await Task.Delay(900);
+
+        // 5. 落地后显示厚度底座
+        if (CurrentFlippedCount > 0) leftVolumeVisible = true;
+        if (CurrentFlippedCount < TotalPages) rightVolumeVisible = true;
+
+        // 6. 再次刷新UI渲染底座
+        StateHasChanged();
+        isAnimating = false;
+    }
+    private async Task TriggerUpload(int recordIndex)
+    {
+        ActiveEditingRecordIndex = recordIndex;
+        await JSRuntime.InvokeVoidAsync("deathBook.triggerUpload");
+    }
+
+    [JSInvokable]
+    public void SetLoadingState(bool isLoading)
+    {
+        IsLoadingImg = isLoading;
+        StateHasChanged();
+    }
+    [JSInvokable]
+    public async Task OnFaceProcessed(double[] descriptor, string imageBase64)
+    {
+        SetLoadingState(false);
+
+        // 如果是“寻魂镜”模式
+        if (isSearchingMode)
+        {
+            isSearchingMode = false; // 复位状态
+            var foundIndex = GhostService.FindRecordIndexByFace(descriptor);
+
+            if (foundIndex.HasValue)
+            {
+                // 找到了！瞬间翻页跳转
+                await JumpToRecord(foundIndex.Value);
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "生死簿查无此人，或其魂魄未归地府！");
+            }
+            return;
+        }
+
+        // ================= 原有录入逻辑 =================
+        // 1. 调用 C# 后端查重
+        if (GhostService.IsDuplicate(descriptor))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "生死簿查明：此人魂魄已入轮回记录！无论如何变换样貌角度，休想瞒天过海！");
+            return;
+        }
+
+        // 2. 将数据推入该页面的编辑缓冲
+        if (ActiveEditingRecordIndex.HasValue)
+        {
+            EditBuffer[ActiveEditingRecordIndex.Value] = new GhostRecord
+            {
+                RecordIndex = ActiveEditingRecordIndex.Value,
+                ImageBase64 = imageBase64,
+                FaceDescriptorJson = JsonSerializer.Serialize(descriptor)
+            };
+            StateHasChanged();
+        }
+    }
+
+    private void SaveRecord(int recordIndex)
+    {
+        if (EditBuffer.TryGetValue(recordIndex, out var record))
+        {
+            // 默认值处理
+            if (string.IsNullOrWhiteSpace(record.Name)) record.Name = "无名氏";
+            if (string.IsNullOrWhiteSpace(record.Birth)) record.Birth = "未知";
+            if (string.IsNullOrWhiteSpace(record.Death)) record.Death = "未知";
+            if (string.IsNullOrWhiteSpace(record.Intro)) record.Intro = "此人生平一片空白...";
+
+            // 保存到 SQLite
+            GhostService.SaveRecord(record);
+
+            // 更新 UI 状态
+            SavedRecords[recordIndex] = record;
+            EditBuffer.Remove(recordIndex);
+        }
+    }
+
+    // 局部渲染组件：由于 Blazor 中直接写 RenderFragment 会很干净
+    private RenderFragment RenderRecordSide(int recordIndex, int pageNum) => __builder =>
+    {
+        <div class="page-content">
+            <div class="page-header">
+                <span>生死簿 · 幽冥录</span>
+                <span>第 @pageNum 页</span>
+            </div>
+
+            @* 重点： @onclick:stopPropagation 阻止点击表单时导致页面翻动 *@
+            <div class="border-box editable-record" style="display: flex; flex-direction: column; align-items: center;" @onclick:stopPropagation>
+
+                @if (SavedRecords.TryGetValue(recordIndex, out var saved))
+                {
+                    <!-- 已落笔定下的内容展示区 -->
+                    <div class="avatar-wrapper" style="margin-top: 10px; z-index: 10;">
+                        <img src="@saved.ImageBase64" style="width:150px; height:200px; object-fit:contain; mix-blend-mode: multiply;" />
+                    </div>
+                    <div class="saved-area" style="display:flex; flex-direction: column; flex: 1; width: 100%; position: relative; align-items: center;">
+                        <div class="vertical-text" style="display: inline-block; margin-top: 25px;">
+                            <div class="record-col">姓名：@saved.Name</div>
+                            <div class="record-col">生于：@saved.Birth</div>
+                            <div class="record-col">死于：@saved.Death</div>
+                            <div class="record-col" style="white-space: pre-wrap; height: 160px; overflow: hidden;">生平：@saved.Intro</div>
+                        </div>
+                        <div class="stamp" style="transform: rotate(-15deg); font-size:24px; bottom:15px; left:15px; position:absolute;">定数</div>
+                    </div>
+                }
+                else
+                {
+                    <!-- 尚未录入 / 正在编辑区 -->
+                    bool isEditing = EditBuffer.TryGetValue(recordIndex, out var editRecord);
+
+                    <div class="avatar-wrapper" style="margin-top: 10px; z-index: 10; cursor:pointer;" @onclick="() => TriggerUpload(recordIndex)">
+                        @if (isEditing)
+                        {
+                            <img src="@editRecord.ImageBase64" style="width:150px; height:200px; object-fit:contain; mix-blend-mode: multiply;" />
+                        }
+                        else
+                        {
+                            <div class="avatar-box" style="width:150px; height:200px; border:2px dashed rgba(26,26,26,0.5); display:flex; align-items:center; justify-content:center;">
+                                @if (ActiveEditingRecordIndex == recordIndex && IsLoadingImg)
+                                {
+                                    <span style="font-size:18px; font-weight:bold; color:var(--blood);">推演中...</span>
+                                }
+                                else
+                                {
+                                    <span style="font-size:18px; text-align:center; writing-mode: horizontal-tb; font-weight:bold;">上传<br>面相</span>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    @if (isEditing && editRecord != null)
+                    {
+                        <div class="form-area" style="display:flex; flex-direction: column; flex: 1; width: 100%; align-items: center;">
+                            <div class="vertical-text" style="display: inline-block; margin-top: 25px;">
+                                <div class="record-col">姓名：<input type="text" class="ghost-input" placeholder="..." style="height: 90px;" @bind="editRecord.Name" /></div>
+                                <div class="record-col">生于：<input type="text" class="ghost-input" placeholder="..." style="height: 70px;" @bind="editRecord.Birth" /></div>
+                                <div class="record-col">死于：<input type="text" class="ghost-input" placeholder="..." style="height: 70px;" @bind="editRecord.Death" /></div>
+                                <div class="record-col">生平：<textarea class="ghost-input" placeholder="..." style="height: 140px; overflow: hidden;" @bind="editRecord.Intro"></textarea></div>
+                            </div>
+                            <div style="margin-top: auto; margin-bottom: 15px;">
+                                <button @onclick="() => SaveRecord(recordIndex)" style="padding: 10px 25px; background: var(--blood); color: var(--paper); border: none; cursor: pointer; font-family: inherit; border-radius:3px; font-size:18px; font-weight:bold; letter-spacing: 5px;">落笔定下</button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        dotNetHelper?.Dispose();
+    }
+}
