@@ -22,13 +22,14 @@
 **【阎罗大殿】** 
 *血雾弥漫，古籍悬浮。三千世界，尽在这一纸泛黄之间。*
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/d6e48113-341b-491b-80c4-d7b9bdbfe03d" width="100%" alt="阎罗大殿">
+  <img width="2559" height="1431" alt="fm1" src="https://github.com/user-attachments/assets/59a4ec77-36eb-43c9-a2af-c80165ce0c6b" />
 </p>
 
 **【寻魂孽镜】**
 *上传面相，天眼洞开。八荒六合之内，查无此人则罢，若有记录，生死簿将自行翻页，锁定其魂魄所在之页。*
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/1b8ee2a4-41fa-4475-9d45-1d2bd381b340" width="100%" alt="寻魂镜与面相录入">
+  <img width="2559" height="1431" alt="fm" src="https://github.com/user-attachments/assets/0f69de4b-a871-494b-8e3f-20b0f7a38649" />
+
 </p>
 
 ---
