@@ -12,6 +12,7 @@ namespace SoulRegistry
         public string Birth { get; set; } = string.Empty;
         public string Death { get; set; } = string.Empty;
         public string Intro { get; set; } = string.Empty;
+        public string CauseOfDeath { get; set; } = string.Empty;
 
         [Column(DbType = "text")]
         public string ImageBase64 { get; set; } = string.Empty;
