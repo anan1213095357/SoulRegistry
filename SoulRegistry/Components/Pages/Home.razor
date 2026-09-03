@@ -1,6 +1,9 @@
 ﻿@page "/"
-@using SoulRegistry.Data
+@using System.Net.Http.Headers
+@using System.Text
 @using System.Text.Json
+@using System.Text.Json.Nodes
+@using SoulRegistry.Data
 @inject GhostService GhostService
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
@@ -836,6 +839,326 @@
             transform: translateY(-20px);
         }
     }
+
+
+    /* ==================== 新增：招魂阵 (AI鬼魂对话) ==================== */
+
+    /* 左侧招魂按钮，与右侧寻魂镜对称 */
+    .summon-soul-btn {
+        position: fixed;
+        width:80px;
+        left: 170px;
+        bottom: 0px;
+        width: 60px;
+        color: #4a5c54; /* 阴间的尸绿色 */
+        font-size: 20px;
+        font-weight: bold;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        z-index: 100;
+        writing-mode: vertical-rl;
+        text-shadow: 0 0 5px #000, 0 0 10px #1a3322;
+        transition: all 0.5s ease;
+        animation: float3d 5s ease-in-out infinite reverse;
+    }
+
+        .summon-soul-btn:hover {
+            color: var(--blood);
+            text-shadow: 0 0 10px #000, 0 0 20px var(--blood);
+            transform: scale(1.1) translateZ(10px);
+        }
+
+    /* 招魂阵遮罩层 */
+    .spirit-altar-overlay {
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(circle at center, rgba(10, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.98) 100%);
+        z-index: 999990;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(10px);
+        animation: darkness-fall 1.5s ease-out forwards;
+    }
+
+    /* 聊天主面板 - 墓碑/灵位造型 */
+    .spirit-chat-box {
+        background-size: cover;
+        background-position: center;
+        border-radius: 10px 10px 0 0;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    .spirit-chat-box img{
+        width:500px;
+        height:900px;
+    }
+
+
+    /* 顶部牌位装饰 */
+    .chat-header-tomb {
+        text-align: center;
+        padding: 15px;
+        font-size: 24px;
+        font-weight: bold;
+        color: var(--paper-dark);
+        border-bottom: 1px dashed rgba(107, 0, 0, 0.5);
+        letter-spacing: 8px;
+        text-shadow: 1px 1px 2px #000;
+        background: #050505;
+    }
+
+    /* 消息展示区 */
+    .spirit-messages {
+        margin-top: 140px;
+        margin-left: 60px;
+        margin-right: 60px;
+        margin-bottom: 100px;
+        position: absolute;
+        top: 0%;
+        bottom: 0%;
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--blood) transparent;
+    }
+
+        /* 隐藏滚动条 */
+        .spirit-messages::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .spirit-messages::-webkit-scrollbar-thumb {
+            background: var(--blood);
+        }
+
+    /* 用户的话 (焚纸传音) */
+    .msg-user {
+        align-self: flex-end;
+        background: rgba(139, 90, 43, 0.15); /* 黄裱纸色调 */
+        border: 1px solid rgba(139, 90, 43, 0.3);
+        color: var(--paper);
+        padding: 10px 15px;
+        border-radius: 4px;
+        max-width: 80%;
+        font-size: 18px;
+        z-index:999;
+        box-shadow: 0 0 10px rgba(139, 90, 43, 0.1);
+    }
+
+    /* 鬼魂的回应 (血字渗出) */
+    .msg-ghost {
+        align-self: flex-start;
+        color: #ff8181; /* 凝固的血色 */
+        max-width: 85%;
+        font-size: 20px;
+        line-height: 1.6;
+        letter-spacing: 2px;
+        text-shadow: 0 0 8px rgba(139, 0, 0, 0.6);
+        /* 鬼气森森的滤镜 */
+        filter: drop-shadow(0 0 2px #000);
+        animation: ghost-whisper 3s infinite alternate;
+    }
+
+    /* 正在输入时的毛骨悚然特效 */
+    .ghost-typing {
+        color: #4a5c54;
+        font-style: italic;
+        font-size: 16px;
+        animation: pulse-ghost 1.5s infinite;
+    }
+
+    /* 输入区：符箓造型 */
+    .talisman-input-area {
+        padding: 20px;
+        position: absolute;
+        bottom: 1%;
+        width: 100%;
+        padding-left: 100px;
+        padding-right: 45px;
+        box-sizing: border-box;
+        display: flex;
+        gap: 15px;
+    
+    }
+
+    .talisman-input {
+        flex: 1;
+        background: transparent;
+        border: 0px solid transparent;
+        color: var(--paper);
+        font-family: inherit;
+        font-size: 18px;
+        padding: 10px;
+        outline: none;
+        transition: border 0.3s;
+    }
+
+        .talisman-input:focus {
+            border-color: var(--blood);
+            box-shadow: inset 0 0 10px rgba(107, 0, 0, 0.2);
+        }
+
+    .burn-btn {
+        background: transparent;
+        border: 0px solid transparent;
+        color: var(--blood);
+        font-family: inherit;
+        font-size: 18px;
+        padding: 0 20px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s;
+    }
+
+        .burn-btn:hover {
+            background: rgba(107, 0, 0, 0.2);
+            box-shadow: 0 0 15px rgba(107, 0, 0, 0.5);
+        }
+
+    /* 幽冥退去按钮 */
+    .close-altar {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        color: #555;
+        cursor: pointer;
+        font-size: 20px;
+    }
+
+        .close-altar:hover {
+            color: var(--blood);
+        }
+
+    /* 动画定义 */
+    @@keyframes darkness-fall {
+        0% {
+            opacity: 0;
+            backdrop-filter: blur(0px);
+        }
+
+        100% {
+            opacity: 1;
+            backdrop-filter: blur(10px);
+        }
+    }
+
+    @@keyframes ghost-whisper {
+        0% {
+            text-shadow: 0 0 5px rgba(139, 0, 0, 0.4);
+            opacity: 0.85;
+        }
+
+        50% {
+            text-shadow: 0 0 15px rgba(255, 0, 0, 0.8), 0 0 2px #000;
+            opacity: 1;
+        }
+
+        100% {
+            text-shadow: 0 0 5px rgba(139, 0, 0, 0.4);
+            opacity: 0.9;
+        }
+    }
+
+    @@keyframes pulse-ghost {
+        0% {
+            opacity: 0.3;
+            content: "幽魂正在凝结怨气...";
+        }
+
+        50% {
+            opacity: 0.8;
+        }
+
+        100% {
+            opacity: 0.3;
+        }
+    }
+    /* ==================== 新增：通灵法阵配置 ==================== */
+    .settings-btn {
+        position: fixed;
+        left: 60px;
+        top: 60px; /* 放在招魂按钮下方 */
+        width: 200px;
+        color: #4a5c54;
+        font-size: 20px;
+        font-weight: bold;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        z-index: 100;
+        writing-mode: vertical-rl;
+        text-shadow: 0 0 5px #000;
+        transition: all 0.5s ease;
+        animation: float3d 5s ease-in-out infinite reverse;
+    }
+
+        .settings-btn:hover {
+            color: var(--paper);
+            text-shadow: 0 0 10px #000, 0 0 20px var(--paper);
+        }
+
+    .settings-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 999995;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(5px);
+    }
+
+    .settings-box {
+        background-size: cover;
+        border: 2px solid var(--blood);
+        padding: 40px;
+        width: 400px;
+        border-radius: 8px;
+        color: var(--paper);
+        box-shadow: inset 0 0 50px rgba(0,0,0,0.9), 0 0 30px rgba(107,0,0,0.5);
+    }
+
+        .settings-box h3 {
+            text-align: center;
+            color: var(--blood);
+            margin-bottom: 20px;
+            letter-spacing: 5px;
+        }
+
+    .settings-row {
+        margin-bottom: 15px;
+        display: flex;
+        flex-direction: column;
+    }
+
+        .settings-row label {
+            margin-bottom: 5px;
+            color: var(--paper-dark);
+            font-weight: bold;
+        }
+
+        .settings-row input {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--paper-dark);
+            color: var(--paper);
+            padding: 8px;
+            font-family: inherit;
+            outline: none;
+        }
+
+            .settings-row input:focus {
+                border-color: var(--blood);
+            }
 </style>
 <!-- ==================== 新增：3D 书本鼠标跟随法阵 ==================== -->
 <script>
@@ -917,9 +1240,31 @@
                 flip.currentTime = 0;
                 flip.volume = 1.0;
                 flip.play().catch(e => console.log("翻页音效被拦截:", e));
+            },
+            playMonologue: function() {
+                var flip = document.getElementById('monologue-audio');
+                flip.currentTime = 0;
+                flip.volume = 1.0;
+                flip.play().catch(e => console.log("翻页音效被拦截:", e));
+            },
+            stopMonologue: function () {
+                var flip = document.getElementById('monologue-audio');
+                if (!flip) return;                 // 防御元素不存在
+                flip.pause();
+                flip.currentTime = 0;              // 回到开头；想保留进度下次续播就删掉这行
+            },
+
+            playChat: function () {
+                var flip = document.getElementById('chat-audio');
+                flip.currentTime = 0;
+                flip.volume = 1.0;
+                flip.play().catch(e => console.log("翻页音效被拦截:", e));
             }
         };
     }
+
+
+
 </script>
 <img src="2222.png" class="mobile-hide" style="position:absolute;top:65%;left:30%;transform:translate(-50%,-50%);width:10%; z-index:-1;" />
 <img src="1111.png" class="mobile-hide" style="position:absolute;top:65%;right:20%;transform:translate(-50%,-50%);width:8%; z-index:-1;" />
@@ -930,6 +1275,70 @@
 </div>
 
 <div id="smoke-container"></div>
+
+<!-- 新增：通灵阵眼（模型配置） -->
+@* <div class="settings-btn" @onclick="() => IsSettingsOpen = true">
+    <img src="settings.png"/>
+</div> *@
+
+@if (IsSettingsOpen)
+{
+    <div class="settings-overlay" @onclick="() => IsSettingsOpen = false">
+        <div class="settings-box" @onclick:stopPropagation>
+            <h3>借法阵眼 (API配置)</h3>
+            <div class="settings-row">
+                <label>幽冥节点 (API URL):</label>
+                <input @bind="AiApiUrl" placeholder="https://api.openai.com" />
+            </div>
+            <div class="settings-row">
+                <label>通灵符令 (API Key):</label>
+                <input type="password" @bind="AiApiKey" placeholder="sk-..." />
+            </div>
+            <div class="settings-row">
+                <label>召唤真名 (Model):</label>
+                <input @bind="AiModel" placeholder="gpt-4" />
+            </div>
+            <button class="burn-btn" style="width: 100%; margin-top: 15px;" @onclick="() => IsSettingsOpen = false">封印阵法 (保存)</button>
+        </div>
+    </div>
+}
+
+<!-- 新增：招魂阵（与鬼魂对话入口） -->
+<div class="summon-soul-btn" @onclick="OpenSpiritAltar">
+    <img src="zhiyin.png" style="    width: 200px;" />
+</div>
+
+@if (IsAltarOpen)
+{
+    <div class="spirit-altar-overlay" @onclick="CloseSpiritAltar">
+        <div>
+            <div class="spirit-chat-box" @onclick:stopPropagation>
+                <img src="chat.png" />
+                <div class="spirit-messages" id="spirit-msg-container">
+
+
+                    @foreach (var msg in ChatHistory)
+                    {
+                        <div class="@(msg.IsGhost ? "msg-ghost" : "msg-user")">
+                            @((MarkupString)msg.Content.Replace("\n", "<br>"))
+                        </div>
+                    }
+
+                    @if (IsGhostTyping)
+                    {
+                        <div class="ghost-typing">@GhostTypingIndicator</div>
+                    }
+                </div>
+
+                <div class="talisman-input-area">
+                    <input class="talisman-input" @bind="CurrentIncantation" @bind:event="oninput" @onkeyup="HandleIncantationKeyUp" placeholder="烧入纸钱，诉说执念..." disabled="@IsGhostTyping" />
+                    <button class="burn-btn" @onclick="BurnIncantation" disabled="@IsGhostTyping">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</button>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+}
 
 
 <!-- 新增：寻魂镜（人脸搜索入口） -->
@@ -960,7 +1369,8 @@
 
 <audio id="bgm-audio" src="audio/bgm.mp3" loop preload="auto"></audio>
 <audio id="page-flip-audio" src="audio/page-flip.mp3" preload="auto"></audio>
-
+<audio id="monologue-audio" src="audio/dubai.mp3" preload="auto"></audio>
+<audio id="chat-audio" src="audio/chat.mp3" preload="auto"></audio>
 <div class="scene" style="--progress: @Progress.ToString(System.Globalization.CultureInfo.InvariantCulture); --scene-offset: @SceneOffsetCss;">
 
     @if (!HasFlippedPage)
@@ -1000,7 +1410,9 @@
                         <div class="border-box vertical-text">
                             <h2>阴曹地府 幽冥录</h2>
                             <p>天地玄黄，宇宙洪荒。<br>凡人阳寿，皆定于此。<br>生人勿视，违者勾魂。</p>
-                            <div class="stamp" style="transform: rotate(10deg); left: auto; right: 50px; bottom: 80px;">绝密</div>
+                            <div class="stamp" style="transform: rotate(-15deg); font-size:24px; bottom:15px; left:15px; position:absolute; cursor: pointer; pointer-events: auto;" @onclick='() => ChatWithGhost(null)'>
+                                通灵
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1139,16 +1551,18 @@
 
     private async Task FlipPage(int pageIndex)
     {
+        if (pageIndex == 0 && !HasFlippedPage)
+        {
+            _ = JSRuntime.InvokeVoidAsync("deathBookAudio.playMonologue");
+        }
         if (isAnimating) return;
         HasFlippedPage = true;
         if (!isBgmStarted)
         {
             isBgmStarted = true;
-            // 不阻塞UI线程，直接异步触发播放
             _ = JSRuntime.InvokeVoidAsync("deathBookAudio.playBgm");
         }
         _ = JSRuntime.InvokeVoidAsync("deathBookAudio.playFlip");
-        // 1. 更新当前翻页的索引
         if (pageIndex < CurrentFlippedCount)
             CurrentFlippedCount = pageIndex;
         else
@@ -1279,7 +1693,9 @@
                             <div class="record-col">死于：@saved.Death</div>
                             <div class="record-col" style="white-space: pre-wrap; height: 160px; overflow: hidden;">生平：@saved.Intro</div>
                         </div>
-                        <div class="stamp" style="transform: rotate(-15deg); font-size:24px; bottom:15px; left:15px; position:absolute;">定数</div>
+                        <div class="stamp" style="transform: rotate(-15deg); font-size:24px; bottom:15px; left:15px; position:absolute; cursor: pointer; pointer-events: auto;" @onclick='() => ChatWithGhost(saved)'>
+                            通灵
+                        </div>
                     </div>
                 }
                 else
@@ -1326,8 +1742,210 @@
         </div>
     };
 
+
+    // ==================== 新增：招魂阵 (AI对话) 逻辑 ====================
+    private bool IsAltarOpen = false;
+    private string CurrentIncantation = "";
+    private bool IsGhostTyping = false;
+    private string GhostTypingIndicator = "幽魂正在凝结怨气...";
+
+    // 聊天记录模型
+    public class SpiritMessage
+    {
+        public bool IsGhost { get; set; }
+        public string Content { get; set; } = "";
+    }
+
+    private List<SpiritMessage> ChatHistory = new();
+
+    private async Task OpenSpiritAltar()
+    {
+        IsAltarOpen = true;
+        if (!isBgmStarted)
+        {
+            isBgmStarted = true;
+            await JSRuntime.InvokeVoidAsync("deathBookAudio.playBgm");
+        }
+        StateHasChanged();
+    }
+
+    private void CloseSpiritAltar()
+    {
+        IsAltarOpen = false;
+    }
+
+    private async Task HandleIncantationKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !IsGhostTyping)
+        {
+            await BurnIncantation();
+        }
+    }
+
+    private async Task BurnIncantation()
+    {
+        if (string.IsNullOrWhiteSpace(CurrentIncantation)) return;
+
+        // 添加阳间（用户）的话
+        ChatHistory.Add(new SpiritMessage { IsGhost = false, Content = CurrentIncantation });
+        string userText = CurrentIncantation;
+        CurrentIncantation = "";
+        IsGhostTyping = true;
+        StateHasChanged();
+
+        await ScrollToBottom();
+
+        // 模拟呼叫大模型 API
+        await SimulateGhostResponse(userText);
+    }
+
+    // 在这里对接你的大模型 API (此处为阴间效果模拟)
+    
+
+    private async Task ScrollToBottom()
+    {
+        // 调用 JS 滚动到底部，防止文字超出视野
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("eval", @"
+                var container = document.getElementById('spirit-msg-container');
+                if(container) { container.scrollTop = container.scrollHeight; }
+            ");
+        }
+        catch { }
+    }
+
+
+
     public async ValueTask DisposeAsync()
     {
         dotNetHelper?.Dispose();
+    }
+
+
+    // ==================== 大模型配置 ====================
+    private bool IsSettingsOpen = false;
+    private string AiApiUrl = "https://api.deepseek.com/chat/completions"; // 如果用第三方，改成 https://api.xxx.com
+    private string AiApiKey = "sk-965f6a25c62d4a0abddc3e1360875af7";
+    private string AiModel = "deepseek-v4-flash";
+
+    // 当前正在对话的特定亡魂
+    private GhostRecord? CurrentChatGhost = null;
+
+    // 点击特定记录的“问灵”印章
+    private async Task ChatWithGhost(GhostRecord ghost)
+    {
+        _ = JSRuntime.InvokeVoidAsync("deathBookAudio.stopMonologue");
+        _ = JSRuntime.InvokeVoidAsync("deathBookAudio.playChat");
+        CurrentChatGhost = ghost;
+        ChatHistory.Clear();
+        await OpenSpiritAltar();
+    }
+
+    // （你原本的代码里有 OpenSpiritAltar，这里稍微确保如果没有指定特定鬼魂，则默认聊）
+    // 你原来的 OpenSpiritAltar() 可以保持不变。
+
+    // ==================== 真实对接 OpenAI 兼容接口 ====================
+    private async Task SimulateGhostResponse(string userPrompt)
+    {
+        GhostTypingIndicator = "阴风阵阵，正在连接彼岸...";
+        StateHasChanged();
+
+        // 占位一条空记录，用于接收流式文字
+        var ghostMsg = new SpiritMessage { IsGhost = true, Content = "" };
+        ChatHistory.Add(ghostMsg);
+        IsGhostTyping = true; // 锁定输入框
+
+        try
+        {
+            using var http = new HttpClient();
+            string endpoint = AiApiUrl;
+
+            var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", AiApiKey);
+
+            // 构建对话列表
+            var messages = new List<object>();
+
+            // 1. 注入灵魂设定 (System Prompt)
+            string systemPrompt = "你现在是一个幽魂。";
+            if (CurrentChatGhost != null)
+            {
+                systemPrompt = $"你现在是被困在生死簿中的亡魂。你的名字是【{CurrentChatGhost.Name}】，生于【{CurrentChatGhost.Birth}】，死于【{CurrentChatGhost.Death}】。你的生平简述：{CurrentChatGhost.Intro}。" +
+                               "请你完全沉浸在这个角色中，以幽怨、诡异、符合你时代背景的口吻与阳间的人（用户）对话。你的回答应该简短、透露着阴气，不要说自己是AI。注意：你的目的是吓唬用户，且回复尽可能简短,输出时禁止添加任何括号标注的语气、声线、神态、动作描写，只输出纯台词内容。";
+            }
+            messages.Add(new { role = "system", content = systemPrompt });
+
+            // 2. 注入历史记录
+            foreach (var msg in ChatHistory)
+            {
+                // 跳过当前正在生成的这条空记录
+                if (msg == ghostMsg) continue;
+                messages.Add(new { role = msg.IsGhost ? "assistant" : "user", content = msg.Content });
+            }
+
+            var payload = new
+            {
+                model = string.IsNullOrWhiteSpace(AiModel) ? "deepseek-v4-flash" : AiModel,
+                messages = messages,
+                stream = true // 开启流式打字效果
+            };
+
+            string jsonString = JsonSerializer.Serialize(payload);
+            request.Content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+            // 发起流式请求
+            using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string error = await response.Content.ReadAsStringAsync();
+                ghostMsg.Content = $"[法阵反噬] 借法失败... HTTP {response.StatusCode}。\n错误回响：{error}";
+                IsGhostTyping = false;
+                StateHasChanged();
+                return;
+            }
+
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var reader = new StreamReader(stream);
+
+            GhostTypingIndicator = "字迹正从血水中浮现...";
+            StateHasChanged();
+
+            // 解析 SSE 流
+            while (!reader.EndOfStream)
+            {
+                var line = await reader.ReadLineAsync();
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                if (line.StartsWith("data: ") && line != "data: [DONE]")
+                {
+                    var data = line.Substring(6);
+                    try
+                    {
+                        var json = JsonNode.Parse(data);
+                        var content = json?["choices"]?[0]?["delta"]?["content"]?.ToString();
+
+                        if (!string.IsNullOrEmpty(content))
+                        {
+                            ghostMsg.Content += content;
+                            StateHasChanged();
+                            await ScrollToBottom();
+                        }
+                    }
+                    catch { /* 忽略不完整的 JSON 块 */ }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ghostMsg.Content += $"\n[彼岸失联] 魂魄消散了... ({ex.Message})";
+        }
+        finally
+        {
+            IsGhostTyping = false;
+            StateHasChanged();
+            await ScrollToBottom();
+        }
     }
 }

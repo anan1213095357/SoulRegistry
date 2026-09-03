@@ -25,7 +25,6 @@ namespace SoulRegistry.Data
             _fsql.Insert(record).ExecuteAffrows();
         }
 
-        // 核心：在后端进行面相重复比对 (欧氏距离计算)
         public bool IsDuplicate(double[] newDescriptor)
         {
             var allRecords = GetAllRecords();
@@ -37,7 +36,8 @@ namespace SoulRegistry.Data
                 if (savedDesc == null) continue;
 
                 double distance = CalculateEuclideanDistance(newDescriptor, savedDesc);
-                if (distance < 0.55) // 距离小于0.55判定为同一人
+                // 【修改阈值】：由于采用 AHash，距离小于 3.0 (代表最多允许约 9 个区块误差) 判定为同一张图
+                if (distance < 3.0)
                 {
                     return true;
                 }
@@ -56,9 +56,6 @@ namespace SoulRegistry.Data
             }
             return Math.Sqrt(sum);
         }
-
-
-        // ================= 新增：寻魂定位（人脸搜索） =================
         public int? FindRecordIndexByFace(double[] newDescriptor)
         {
             var allRecords = GetAllRecords();
@@ -69,13 +66,13 @@ namespace SoulRegistry.Data
                 var savedDesc = JsonSerializer.Deserialize<double[]>(record.FaceDescriptorJson);
                 if (savedDesc == null) continue;
 
-                // 距离小于0.55判定为同一人，返回他的生死簿索引
-                if (CalculateEuclideanDistance(newDescriptor, savedDesc) < 0.55)
+                // 【修改阈值】：同样改为 3.0
+                if (CalculateEuclideanDistance(newDescriptor, savedDesc) < 3.0)
                 {
                     return record.RecordIndex;
                 }
             }
-            return null; // 查无此人
+            return null; // 查无此图
         }
     }
 }

@@ -2,20 +2,9 @@
     dotNetHelper: null,
     init: async function (helper) {
         this.dotNetHelper = helper;
-
-        // 关键修改：指向本地的 models 文件夹
-        const MODEL_URL = '/models';
-
-        try {
-            await Promise.all([
-                faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-            ]);
-            document.getElementById('ai-loading').style.display = 'none';
-        } catch (err) {
-            document.getElementById('loading-text').innerHTML = "❌ 法阵模型下载失败！<br>" + err.message;
-        }
+        // 废弃原本的 AI 模型加载，直接解除加载遮罩
+        const loadingEl = document.getElementById('ai-loading');
+        if (loadingEl) loadingEl.style.display = 'none';
     },
 
     triggerUpload: function () {
@@ -46,21 +35,30 @@
     },
 
     processImage: async function (img) {
-        // 通知 Blazor 开启 Loading
         await this.dotNetHelper.invokeMethodAsync('SetLoadingState', true);
 
         try {
-            const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
-                .withFaceLandmarks()
-                .withFaceDescriptor();
+            // 【核心修改】图像特征提取 (感知哈希 AHash)
+            // 压缩到 8x8 提取 64 个特征值，完全无视是否是人脸
+            const featCanvas = document.createElement('canvas');
+            featCanvas.width = 8;
+            featCanvas.height = 8;
+            const featCtx = featCanvas.getContext('2d');
+            featCtx.drawImage(img, 0, 0, 8, 8);
+            const featData = featCtx.getImageData(0, 0, 8, 8).data;
 
-            if (!detection) {
-                alert("生死簿查明：此画中并无生人面孔！(未检测到人脸)");
-                await this.dotNetHelper.invokeMethodAsync('SetLoadingState', false);
-                return;
+            let grayValues = [];
+            let sum = 0;
+            for (let i = 0; i < featData.length; i += 4) {
+                let g = featData[i] * 0.299 + featData[i + 1] * 0.587 + featData[i + 2] * 0.114;
+                grayValues.push(g);
+                sum += g;
             }
+            let avg = sum / 64;
+            // 生成 64 维特征向量 (1或0)
+            const descriptor = grayValues.map(g => g >= avg ? 1.0 : 0.0);
 
-            // 水墨特效 Canvas 处理
+            // ================= 保持原有的阴间水墨特效 =================
             const canvas = document.createElement('canvas');
             canvas.width = 150; canvas.height = 200;
             const ctx = canvas.getContext('2d');
@@ -83,8 +81,8 @@
             ctx.putImageData(imgData, 0, 0);
             const dataUrl = canvas.toDataURL('image/png');
 
-            // 将面部矩阵 (Array) 和图片发回 C#
-            await this.dotNetHelper.invokeMethodAsync('OnFaceProcessed', Array.from(detection.descriptor), dataUrl);
+            // 发送自定义的 64 维图片特征给 C#
+            await this.dotNetHelper.invokeMethodAsync('OnFaceProcessed', descriptor, dataUrl);
         } catch (err) {
             alert("推演中断：" + err);
             await this.dotNetHelper.invokeMethodAsync('SetLoadingState', false);
